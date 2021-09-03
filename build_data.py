@@ -113,7 +113,8 @@ def copy_build_profiles(build_report_folder: str):
         shutil.copy(file_dir, dest_file_dir)
 
 
-def loop_build():
+def loop_build(once: bool):
+    print(f'默认 {once}')
     # Generate folder according to date and time
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_folder = os.path.abspath(f'../reports{now}')
@@ -123,7 +124,10 @@ def loop_build():
         os.makedirs(output_folder)
 
     # loop cpu count, look up build time
-    for i in range(cpu_count() + 1):
+    cores = cpu_count()
+    if once:
+        cores = 0
+    for i in range(cores+1):
     # for i in range(1):
         # build editor
         build_status, build_report_folder = build_editor(threads=i, output_folder=output_folder)
@@ -187,6 +191,9 @@ def collect_data(reports_folder: str):
 
 # Entry point of this script
 if __name__ == '__main__':
-    reports_folder = loop_build()
+    once = False
+    if len(sys.argv) > 1:
+        once = True
+    reports_folder = loop_build(once)
     # reports_folder = os.path.abspath(f'../reports2021-09-03_12-08-25')
     collect_data(reports_folder)
