@@ -57,7 +57,7 @@ def build_editor(threads: int = 0, output_folder: str = os.path.abspath("../repo
     if not os.path.exists(build_report_folder):
         os.makedirs(build_report_folder)
 
-    jam_command = f'perl {os.getcwd()}/jam.pl {plat_preffix}Editor'
+    jam_command = f'perl {os.getcwd()}/jam.pl'
 
     # appending threads to jam command
     if threads > 0:
@@ -65,7 +65,7 @@ def build_editor(threads: int = 0, output_folder: str = os.path.abspath("../repo
         print(f'\n---------线程数为：{threads}---------')
     else:
         print(f'\n---------默认线程数量---------')
-
+    jam_command += f' {plat_preffix}Editor'
     # redirect output
     jam_command += f' > {build_report_folder}/jam_{plat_preffix}Editor_j{threads}_log.txt'
 
@@ -112,6 +112,9 @@ def copy_build_profiles(build_report_folder: str):
         dest_file_dir = os.path.abspath(f'{dest_folder}/{i}')
         shutil.copy(file_dir, dest_file_dir)
 
+    profile_json = os.path.abspath(f'./artifacts/profile.json')
+    shutil.copy(profile_json, os.path.abspath(f'{dest_folder}/profile.json'))
+
 
 def loop_build(once: bool):
     print(f'默认 {once}')
@@ -128,7 +131,8 @@ def loop_build(once: bool):
     if once:
         cores = 0
     for i in range(cores+1):
-    # for i in range(1):
+        if i != 1 and i%2 != 0:
+            continue
         # build editor
         build_status, build_report_folder = build_editor(threads=i, output_folder=output_folder)
         if build_status != 0:
@@ -158,23 +162,29 @@ def collect_data(reports_folder: str):
     data_res = {'cores': []}
     data_res_csv = os.path.abspath(f'{reports_folder}/data_res.csv')
     folder_list = os.listdir(reports_folder)
-    for f in folder_list:
+    for i, f in enumerate(folder_list):
         if os.path.isfile(f'{reports_folder}/{f}'):
             continue
+        time_report_file = os.path.abspath(f'{reports_folder}/{f}/time_report.txt')
+        if not os.path.exists(time_report_file):
+            continue
+        for key in data_res:
+            data_res[key].append('')
+        lenth = len(data_res['cores'])
         f_title = f.split('_')
         j_idx = f_title[1].find('j')
         cores = f_title[1][j_idx+1:]
-        data_res['cores'].append(int(cores))
-        time_report_file = os.path.abspath(f'{reports_folder}/{f}/time_report.txt')
+        data_res['cores'][lenth-1]=cores
         fp = open(time_report_file)
         lines = fp.readlines()
         for line in lines:
             if 'Total wall time' in line or 'items' in line:
                 name, time = get_type_time(line)
                 if name in data_res:
-                    data_res[name].append(time)
+                    data_res[name][lenth-1] = time
                 else:
-                    data_res[name] = [time]
+                    data_res[name] = ['']*(lenth)
+                    data_res[name][lenth-1] = time
         fp.close()
     res_df = pd.DataFrame(data_res)
     res_df.to_csv(data_res_csv, index=None)
@@ -195,5 +205,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         once = True
     reports_folder = loop_build(once)
-    # reports_folder = os.path.abspath(f'../reports2021-09-03_12-08-25')
+    # reports_folder = os.path.abspath(f'../reports2021-09-03_23-50-49')
     collect_data(reports_folder)
