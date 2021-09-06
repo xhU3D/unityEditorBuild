@@ -202,7 +202,7 @@ def draw(reports_folder: str):
     plt.xlabel('cores', fontsize=20)
     plt.ylabel('Total wall time(sec)', fontsize=20)
     plt.bar(x, y)
-    plt.savefig(f'./{title}.png')
+    plt.savefig(f'{reports_folder}/{title}.png')
     plt.show()
 
     # pie chart
@@ -219,7 +219,7 @@ def draw(reports_folder: str):
         plt.axis('equal')
         plt.title(title, fontdict={'fontsize': 20})
         plt.legend(fontsize=20, loc="best")
-        plt.savefig(f'./{title}.png')
+        plt.savefig(f'{reports_folder}/{title}.png')
         plt.show()
 
 # Entry point of this script
