@@ -6,6 +6,7 @@ import subprocess
 from multiprocessing import cpu_count
 from datetime import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 # Get platform preffix according to host machine
@@ -116,8 +117,8 @@ def copy_build_profiles(build_report_folder: str):
     shutil.copy(profile_json, os.path.abspath(f'{dest_folder}/profile.json'))
 
 
-def loop_build(once: bool):
-    print(f'默认 {once}')
+def loop_build(df: bool):
+    print(f'默认 {df}')
     # Generate folder according to date and time
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_folder = os.path.abspath(f'../reports{now}')
@@ -128,10 +129,10 @@ def loop_build(once: bool):
 
     # loop cpu count, look up build time
     cores = cpu_count()
-    if once:
+    if df:
         cores = 0
     for i in range(cores+1):
-        if i != 1 and i%2 != 0:
+        if i != 1 and i % 2 != 0:
             continue
         # build editor
         build_status, build_report_folder = build_editor(threads=i, output_folder=output_folder)
@@ -169,7 +170,7 @@ def collect_data(reports_folder: str):
         if not os.path.exists(time_report_file):
             continue
         for key in data_res:
-            data_res[key].append('')
+            data_res[key].append(0)
         lenth = len(data_res['cores'])
         f_title = f.split('_')
         j_idx = f_title[1].find('j')
@@ -183,27 +184,49 @@ def collect_data(reports_folder: str):
                 if name in data_res:
                     data_res[name][lenth-1] = time
                 else:
-                    data_res[name] = ['']*(lenth)
+                    data_res[name] = [0]*(lenth)
                     data_res[name][lenth-1] = time
         fp.close()
     res_df = pd.DataFrame(data_res)
     res_df.to_csv(data_res_csv, index=None)
     print(f'\n本次数据:{data_res_csv}')
-    # data_res = pd.read_csv(data_res_csv)
-    # data_res = pd.DataFrame(data_res)
-    # plt.title("cores-totalTime")
-    # plt.xlabel("cores")
-    # plt.ylabel("totalTime(sec)")
-    # x = data_res['cores']
-    # y = data_res['Total wall time']
-    # plt.bar(x,y,align='center')
-    # plt.show()
+
+def draw(reports_folder: str):
+    # bar chart
+    df = pd.read_csv(f'{reports_folder}/data_res.csv')
+    x = df['cores']
+    y = df['Total wall time']
+    title = 'Total time'
+    plt.figure(figsize=(10, 10), dpi=100)
+    plt.title(title, fontdict={'fontsize': 20})
+    plt.xlabel('cores', fontsize=20)
+    plt.ylabel('Total wall time(sec)', fontsize=20)
+    plt.bar(x, y)
+    plt.savefig(f'./{title}.png')
+    plt.show()
+
+    # pie chart
+    labels = df.columns[2:]
+    for idx, row in df.iterrows():
+        title = f'cores-{int(row[0:1])}'
+        values = row[2:]
+        plt.figure(figsize=(40, 20), dpi=100)
+        plt.pie(values, labels=labels, autopct='%1.1f%%',
+                shadow=False, startangle=180, labeldistance=1.1,
+                wedgeprops={'edgecolor': 'w', 'linewidth': 5}, normalize=True,
+                textprops={'fontsize': 20})
+
+        plt.axis('equal')
+        plt.title(title, fontdict={'fontsize': 20})
+        plt.legend(fontsize=20, loc="best")
+        plt.savefig(f'./{title}.png')
+        plt.show()
 
 # Entry point of this script
 if __name__ == '__main__':
-    once = False
-    if len(sys.argv) > 1:
-        once = True
-    reports_folder = loop_build(once)
-    # reports_folder = os.path.abspath(f'../reports2021-09-03_23-50-49')
+    default = False
+    if len(sys.argv) > 1 and sys.argv[1] == 'default':
+        default = True
+    reports_folder = loop_build(default)
     collect_data(reports_folder)
+    draw(reports_folder)
