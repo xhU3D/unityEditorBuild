@@ -202,8 +202,9 @@ def draw(reports_folder: str):
     plt.xlabel('cores', fontsize=20)
     plt.ylabel('Total wall time(sec)', fontsize=20)
     plt.bar(x, y)
+    for a, b in zip(x, y):
+        plt.text(a, b + 0.05, '%.0f' % b, ha='center', va='bottom', fontsize=7)
     plt.savefig(f'{reports_folder}/{title}.png')
-    plt.show()
 
     # pie chart
     labels = df.columns[2:]
@@ -212,15 +213,28 @@ def draw(reports_folder: str):
         values = row[2:]
         plt.figure(figsize=(40, 20), dpi=100)
         plt.pie(values, labels=labels, autopct='%1.1f%%',
-                shadow=False, startangle=180, labeldistance=1.1,
-                wedgeprops={'edgecolor': 'w', 'linewidth': 5}, normalize=True,
-                textprops={'fontsize': 20})
-
+              shadow=False, startangle=180, labeldistance=1.1,
+              wedgeprops={'edgecolor': 'w', 'linewidth': 5}, normalize=True,
+              textprops={'fontsize': 20})
         plt.axis('equal')
         plt.title(title, fontdict={'fontsize': 20})
         plt.legend(fontsize=20, loc="best")
         plt.savefig(f'{reports_folder}/{title}.png')
-        plt.show()
+
+    # pie together
+    plt.figure(figsize=(15, 30), dpi=100)
+    for idx, row in df.iterrows():
+        title = f'cores-{int(row[0:1])}'
+        values = row[2:]
+        pos = f'42{idx+1}'
+        f = plt.subplot(int(pos))
+        f.pie(values, autopct='%1.1f%%',
+                shadow=False, startangle=180, labeldistance=1.1,
+                wedgeprops={'edgecolor': 'w', 'linewidth': 5}, normalize=True,
+                textprops={'fontsize': 20})
+        f.axis('equal')
+        f.set_title(title, fontdict={'fontsize': 22})
+    plt.savefig(f'{reports_folder}/pies_together.png')
 
 # Entry point of this script
 if __name__ == '__main__':
